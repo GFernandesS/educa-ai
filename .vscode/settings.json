@@ -1,0 +1,6 @@
+{
+    "yaml.schemas": {
+        "https://raw.githubusercontent.com/lalcebo/json-schema/master/serverless/reference.json": "file:///c%3A/projects/study/datamotica/franq-ia/franq-ia/serverless.yaml",
+        "https://json.schemastore.org/github-workflow.json": "file:///c%3A/projects/study/datamotica/franq-ia/franq-ia/.github/workflows/deploy.yml"
+    }
+}
