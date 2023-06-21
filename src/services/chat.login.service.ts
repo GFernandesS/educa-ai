@@ -1,16 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { ApiKeyContext } from "src/context/apiKey.context";
+import { StudentContext } from "src/context/student.context";
 import { ChatLoginResponseDto } from "src/dtos/login/chat-login-response-dto";
-import { ApiKey, ApiKeyDocument } from "src/schemas/apiKey.schema";
+import { Student, StudentDocument } from "src/schemas/student.schema";
 import { Session } from "src/schemas/session.schema";
 
 @Injectable()
 export class ChatLoginService {
-    constructor(@InjectModel(ApiKey.name) private readonly apiKeyModel: Model<ApiKeyDocument>,
+    constructor(@InjectModel(Student.name) private readonly apiKeyModel: Model<StudentDocument>,
         @InjectModel(Session.name) private readonly sessionModel: Model<Session>,
-        private readonly apiKeyContext: ApiKeyContext) { }
+        private readonly apiKeyContext: StudentContext) { }
 
     validateKey(): ChatLoginResponseDto {
         this.generateDefaultSessionIfNotExists()

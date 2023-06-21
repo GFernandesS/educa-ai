@@ -4,8 +4,8 @@ import { ChatLoginResponseDto } from "src/dtos/login/chat-login-response-dto";
 import { ChatLoginService } from "src/services/chat.login.service";
 
 
-@Controller('api-key')
-export class ApiKeyController {
+@Controller('login')
+export class LoginController {
     constructor(private readonly chatLoginService: ChatLoginService) { }
 
     @HttpCode(HttpStatus.OK)

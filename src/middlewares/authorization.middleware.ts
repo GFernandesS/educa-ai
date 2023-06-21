@@ -2,13 +2,13 @@ import { HttpException, HttpStatus, Injectable, NestMiddleware } from '@nestjs/c
 import { InjectModel } from '@nestjs/mongoose'
 import { Request, Response, NextFunction } from 'express'
 import { Model } from 'mongoose'
-import { ApiKeyContext } from 'src/context/apiKey.context'
-import { ApiKey } from 'src/schemas/apiKey.schema'
+import { StudentContext } from 'src/context/student.context'
+import { Student } from 'src/schemas/student.schema'
 
 @Injectable()
 export class AuthorizationMiddleware implements NestMiddleware {
-    constructor(@InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKey>,
-        private apiKeyContext: ApiKeyContext) { }
+    constructor(@InjectModel(Student.name) private apiKeyModel: Model<Student>,
+        private userContext: StudentContext) { }
 
     async use(req: Request, res: Response, next: NextFunction) {
         const apiKeyFromHeader = req.headers['api-key']
@@ -16,12 +16,12 @@ export class AuthorizationMiddleware implements NestMiddleware {
         if (!apiKeyFromHeader)
             throw new HttpException('É necessário informar uma chave de API!', HttpStatus.UNAUTHORIZED)
 
-        const validApiKey = await this.apiKeyModel.findById(apiKeyFromHeader).exec() as ApiKey
+        const validApiKey = await this.apiKeyModel.findById(apiKeyFromHeader).exec() as Student
 
         if (!validApiKey)
             throw new HttpException('Chave de API inválida!', HttpStatus.UNAUTHORIZED)
 
-        this.apiKeyContext.value = validApiKey
+        this.userContext.value = validApiKey
 
         next()
     }

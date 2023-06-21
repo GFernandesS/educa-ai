@@ -13,10 +13,7 @@ export interface FeedbackModel {
 @Schema()
 export class Response {
     @Prop({ required: true })
-    apiKey: string
-
-    @Prop({ required: false })
-    sessionId: string
+    studentId: string
 
     @Prop({ required: false })
     input: string
@@ -29,9 +26,6 @@ export class Response {
 
     @Prop({ required: false, default: 0 })
     tokens: number // Número de tokens contidos somente na resposta, sem considerar o contexto
-
-    @Prop({ required: true })
-    hasFranchisingContext: boolean
 
     @Prop({ required: false })
     isFirstInteraction: boolean
