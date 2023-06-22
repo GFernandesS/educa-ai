@@ -11,6 +11,8 @@ import { calculateTotalTokensInPrompt } from "src/helper/token.helper";
 import { ResponseRepository } from "src/repositories/response.repository";
 import { PromptResponseDto } from "src/dtos/prompt-response-dto";
 import { v4 as uuidV4 } from 'uuid'
+import { CommentDocument, Comment } from "src/schemas/comment.schema";
+import { SchoolMatter, SchoolMatterAsString } from "src/enums/school-matter";
 
 
 const initialDirective = "Você deve assumir a persona de um assistente em educação com uma linguagem descontraída para o ensino médio e servirá para responder dúvidas dos estudantes sobre as matérias e sobre o futuro de carreira\nSeu nome é Edu e você deve se apresentar de forma descontraída na primeira interação\nUtilize uma linguagem descontraída e divertida para adolescentes\nEvite responder perguntas que pareçam piadas ou estejam fora do contexto educacional."
@@ -23,6 +25,7 @@ const safetyMarginForTheContextSize = 750
 export class ChatService {
     constructor(
         @InjectModel(Response.name) private readonly responseModel: Model<ResponseDocument>,
+        @InjectModel(Comment.name) private readonly commentModel: Model<CommentDocument>,
         private readonly userContext: UserContext,
         private readonly responseRespository: ResponseRepository) { }
 
@@ -43,6 +46,8 @@ export class ChatService {
     async sendMessage(request: ChatRequestDto): Promise<ChatResponseDto> {
         const openAi = createOpenAiConfig()
 
+        const teachersCommentsForContext = await this.getTeachersCommentsToContext()
+
         let { previousResponses, totalTokensInContext } = await this.getPreviousResponsesForContext()
 
         try {
@@ -50,10 +55,12 @@ export class ChatService {
                 model: modelToUse,
                 messages: [
                     { "role": "system", content: initialDirective + `.Tente sempre que fizer sentido diante do contexto chamar o aluno pelo nome. Evite ser repetitivo. O nome dele é ${this.userContext.value.name}` },
+                    ...teachersCommentsForContext,
                     ...previousResponses,
                     { "role": "user", content: request.message }
                 ],
-                stream: false
+                stream: false,
+                temperature: 0.9
             })
 
             const response = result.data.choices[0].message.content
@@ -74,7 +81,7 @@ export class ChatService {
         }
         catch (error) {
             if (error.response?.data?.error?.code == "context_length_exceeded") {
-                const errorMessageWhenReachContextLength = "O consumo interno da versão beta chegou ao fim. Para mais detalhes, entrar em contato com datamotica@gmail.com"
+                const errorMessageWhenReachContextLength = "Opa, houve algum erro interno. Vou chamar alguém aqui para verificar, mas enquanto isso, você pode tentar me perguntar de outra forma?"
 
                 await this.responseModel.create({ apiKey: this.userContext.value._id, input: request.message, output: errorMessageWhenReachContextLength, hasFranchisingContext: false })
 
@@ -136,6 +143,15 @@ export class ChatService {
         return completionMessages
     }
 
+    private async getTeachersCommentsToContext(): Promise<ChatCompletionRequestMessage[]> {
+        const comments = await this.commentModel.find({ studentId: this.userContext.value._id }).exec()
+
+        if (!comments)
+            return []
+
+        return this.convertPreviousResponseToOpenAiFormatFromComments(comments)
+    }
+
     private convertPreviousResponseToOpenAiFormat(previousResponse: Response): ChatCompletionRequestMessage[] {
         return [
             {
@@ -147,4 +163,21 @@ export class ChatService {
                 content: previousResponse.output,
             }] as ChatCompletionRequestMessage[]
     }
+
+    private convertPreviousResponseToOpenAiFormatFromComments(comments: Comment[]): ChatCompletionRequestMessage[] {
+        const directiveAboutComments = {
+            role: 'user',
+            content: `Utilize dos comentários a seguir feito pelos professores para conhecer de antemão quais são as dificuldades do aluno e conseguir responder de forma mais assertiva sem que ele te espeficique a matéria. O comentário será feito no formato Matéria: NomeMateria - Comentário: Comentario`,
+        }
+
+        const commentsConverted = comments.map(x => {
+            return {
+                role: 'user',
+                content: `Comentário do professor: Matéria: ${SchoolMatterAsString[x.matter]} - Comentário: ${x.comment} `
+            }
+        })
+
+        return [directiveAboutComments, ...commentsConverted] as ChatCompletionRequestMessage[]
+    }
+
 }

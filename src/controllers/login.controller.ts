@@ -1,15 +1,15 @@
 import { Controller, Post, HttpCode, HttpStatus, Body } from "@nestjs/common";
-import { ChatLoginResponseDto } from "src/dtos/login/chat-login-response-dto";
-import { ChatLoginService } from "src/services/chat.login.service";
+import { LoginResponseDto } from "src/dtos/login/login-response-dto";
+import { LoginService } from "src/services/login.service";
 
 
 @Controller('login')
 export class LoginController {
-    constructor(private readonly chatLoginService: ChatLoginService) { }
+    constructor(private readonly chatLoginService: LoginService) { }
 
     @HttpCode(HttpStatus.OK)
     @Post()
-    validateKey(): ChatLoginResponseDto {
+    validateKey(): LoginResponseDto {
         return this.chatLoginService.validateLogin()
     }
 }

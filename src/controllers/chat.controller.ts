@@ -16,7 +16,7 @@ export class ChatController {
 
     @HttpCode(200)
     @Get('responses')
-    async getResponses(){
+    async getResponses() {
         return await this.chatService.getResponses()
     }
 }
