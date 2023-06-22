@@ -1,5 +1,7 @@
+import { UserRole } from "src/enums/user-role";
+
 export interface ChatLoginResponseDto {
-    phoneFilled: boolean,
-    nameFilled: boolean,
-    name: string
+    name: string,
+    role: UserRole,
+    id: string
 }

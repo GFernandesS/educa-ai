@@ -19,8 +19,8 @@ export class ResponseRepository {
         return await this.responseModel.create({ sessionId: null, apiKey, input: inputMessage, output: outputMessage, date: new Date(), hasFranchisingContext: false, isFirstInteraction: false })
     }
 
-    private getByIdAndHasFranchisingContextOrFirstInteractionBaseQuery(apiKey: string): any {
-        return this.responseModel.find({ apiKey, $or: [{ hasFranchisingContext: true }, { isFirstInteraction: true }] })
+    private getByIdAndHasFranchisingContextOrFirstInteractionBaseQuery(studentId: string): any {
+        return this.responseModel.find({ studentId, isFirstInteraction: true })
     }
 }
 

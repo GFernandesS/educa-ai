@@ -13,4 +13,10 @@ export class ChatController {
     async sendMessage(@Req() request: Request): Promise<ChatResponseDto> {
         return await this.chatService.sendMessage(request.body)
     }
+
+    @HttpCode(200)
+    @Get('responses')
+    async getResponses(){
+        return await this.chatService.getResponses()
+    }
 }

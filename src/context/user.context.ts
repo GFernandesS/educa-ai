@@ -1,11 +1,11 @@
 import { Injectable, Scope } from "@nestjs/common";
-import { Student } from "src/schemas/student.schema";
+import { User } from "src/schemas/user.schema";
 
 @Injectable({ scope: Scope.REQUEST })
-export class StudentContext {
-    private _value: Student
+export class UserContext {
+    private _value: User
 
-    public get value(): Student {
+    public get value(): User {
         return this._value
     }
 

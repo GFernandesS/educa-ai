@@ -1,6 +1,7 @@
 import { HydratedDocument } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { FeedbackType } from "src/enums/feedback-type";
+import { v4 as uuidV4 } from 'uuid'
 
 export type ResponseDocument = HydratedDocument<Response>
 
@@ -12,6 +13,9 @@ export interface FeedbackModel {
 
 @Schema()
 export class Response {
+    @Prop({ required: true, default: uuidV4() })
+    _id: string
+
     @Prop({ required: true })
     studentId: string
 

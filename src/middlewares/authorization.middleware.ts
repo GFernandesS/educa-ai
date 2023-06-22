@@ -2,26 +2,41 @@ import { HttpException, HttpStatus, Injectable, NestMiddleware } from '@nestjs/c
 import { InjectModel } from '@nestjs/mongoose'
 import { Request, Response, NextFunction } from 'express'
 import { Model } from 'mongoose'
-import { StudentContext } from 'src/context/student.context'
-import { Student } from 'src/schemas/student.schema'
+import { UserContext } from 'src/context/user.context'
+import { User } from 'src/schemas/user.schema'
 
 @Injectable()
 export class AuthorizationMiddleware implements NestMiddleware {
-    constructor(@InjectModel(Student.name) private apiKeyModel: Model<Student>,
-        private userContext: StudentContext) { }
+    constructor(@InjectModel(User.name) private studentModel: Model<User>,
+        private userContext: UserContext) { }
 
     async use(req: Request, res: Response, next: NextFunction) {
-        const apiKeyFromHeader = req.headers['api-key']
+        const email = req.headers['email']
+        const password = req.headers['password']
+        const id = req.headers['id']
 
-        if (!apiKeyFromHeader)
-            throw new HttpException('É necessário informar uma chave de API!', HttpStatus.UNAUTHORIZED)
+        if (id) {
+            const user = (await this.studentModel.findOne({ _id: id }).exec()) as User
 
-        const validApiKey = await this.apiKeyModel.findById(apiKeyFromHeader).exec() as Student
+            if (!user) {
+                throw new HttpException('Sessão inválida!', HttpStatus.UNAUTHORIZED)
+            }
 
-        if (!validApiKey)
-            throw new HttpException('Chave de API inválida!', HttpStatus.UNAUTHORIZED)
+            this.userContext.value = user
 
-        this.userContext.value = validApiKey
+            next()
+            return
+        }
+
+        if (!email || !password)
+            throw new HttpException('É necessário informar o email e a senha!', HttpStatus.UNAUTHORIZED)
+
+        const possibleValidUser = await this.studentModel.findOne({ email }).exec() as User
+
+        if (!possibleValidUser || possibleValidUser.password !== password)
+            throw new HttpException('Email ou senha não encontrados!', HttpStatus.UNAUTHORIZED)
+
+        this.userContext.value = possibleValidUser
 
         next()
     }
