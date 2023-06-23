@@ -12,10 +12,11 @@ import { ResponseRepository } from "src/repositories/response.repository";
 import { PromptResponseDto } from "src/dtos/prompt-response-dto";
 import { v4 as uuidV4 } from 'uuid'
 import { CommentDocument, Comment } from "src/schemas/comment.schema";
-import { SchoolMatter, SchoolMatterAsString } from "src/enums/school-matter";
+import { SchoolMatterAsString } from "src/enums/school-matter";
+import { User, UserDocument } from "src/schemas/user.schema";
 
 
-const initialDirective = "Você deve assumir a persona de um assistente em educação com uma linguagem descontraída para o ensino médio e servirá para responder dúvidas dos estudantes sobre as matérias e sobre o futuro de carreira\nSeu nome é Edu e você deve se apresentar de forma descontraída na primeira interação\nUtilize uma linguagem descontraída e divertida para adolescentes\nEvite responder perguntas que pareçam piadas ou estejam fora do contexto educacional."
+const initialDirective = "Você deve assumir a persona de um assistente em educação com uma linguagem descontraída para o ensino médio e servirá para responder dúvidas dos estudantes sobre as matérias e sobre o futuro de carreira\nSeu nome é Edu e você deve se apresentar de forma descontraída na primeira interação\nUtilize uma linguagem descontraída e divertida para adolescentes\nEvite responder perguntas que pareçam piadas ou estejam fora do contexto educacional. Termine as respostas com perguntas para estimular a conversa"
 const modelToUse = "gpt-3.5-turbo"
 const maximumTokensInContextForModel = 4096
 const safetyMarginForTheContextSize = 750
@@ -26,6 +27,7 @@ export class ChatService {
     constructor(
         @InjectModel(Response.name) private readonly responseModel: Model<ResponseDocument>,
         @InjectModel(Comment.name) private readonly commentModel: Model<CommentDocument>,
+        @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
         private readonly userContext: UserContext,
         private readonly responseRespository: ResponseRepository) { }
 
@@ -60,7 +62,7 @@ export class ChatService {
                     { "role": "user", content: request.message }
                 ],
                 stream: false,
-                temperature: 0.9
+                temperature: 0.8
             })
 
             const response = result.data.choices[0].message.content
@@ -74,6 +76,8 @@ export class ChatService {
                 tokens: totalOfTokensForResponse, isFirstInteraction: !this.userContext.value.wasStarted, date: new Date(),
                 _id: uuidV4()
             })
+
+            await this.incrementUses(totalTokensInContext)
 
             return {
                 message: response
@@ -92,6 +96,19 @@ export class ChatService {
 
             throw error
         }
+    }
+
+    private async incrementUses(totalTokensInContext: number): Promise<boolean> {
+        const isFirstInteraction = !this.userContext.value.wasStarted
+
+        if (isFirstInteraction)
+            this.userContext.value.wasStarted = true
+
+        this.userContext.value.totalValidTokens = totalTokensInContext
+
+        await this.userModel.replaceOne({ _id: this.userContext.value._id }, this.userContext.value).exec()
+
+        return isFirstInteraction
     }
 
     private async getPreviousResponsesForContext(): Promise<{ previousResponses: ChatCompletionRequestMessage[], totalTokensInContext: number }> {
@@ -167,7 +184,7 @@ export class ChatService {
     private convertPreviousResponseToOpenAiFormatFromComments(comments: Comment[]): ChatCompletionRequestMessage[] {
         const directiveAboutComments = {
             role: 'user',
-            content: `Utilize dos comentários a seguir feito pelos professores para conhecer de antemão quais são as dificuldades do aluno e conseguir responder de forma mais assertiva sem que ele te espeficique a matéria. O comentário será feito no formato Matéria: NomeMateria - Comentário: Comentario`,
+            content: `Utilize dos comentários a seguir feito pelos professores para conhecer quais são as dificuldades do aluno e conseguir responder de forma mais assertiva sem que ele te espeficique a matéria. Estimule o aluno a estudar a partir dessas dúvidas em cada resposta que der`,
         }
 
         const commentsConverted = comments.map(x => {

@@ -48,7 +48,7 @@ export class StudentService {
 
     async getCommentsByStudentId(studentId: string): Promise<StudentCommentDto[]> {
         this.validateTeacherRole()
-        return await this.commentModel.find({ studentId }).exec() as StudentCommentDto[]
+        return await this.commentModel.find({ studentId, teacherId: this.userContext.value._id }).exec() as StudentCommentDto[]
     }
 
     private validateTeacherRole(): void {
